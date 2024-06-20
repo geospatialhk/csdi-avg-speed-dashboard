@@ -1,6 +1,9 @@
 # csdi-avg-speed-dashboard
 CSDI Avg Speed Dashboard
 
+<img width="700" alt="00" src="https://github.com/geospatialhk/csdi-avg-speed-dashboard/assets/15967005/077312d2-fc84-4124-8c06-e6dfd20808db">
+
+
 This is an exercise designed to demostrate the development of open source GIS application using the data from CSDI.
 
 Live demo at: [https://dashboard.hk/csdi-avgspeed.html](https://dashboard.hk/csdi-avgspeed.html)
