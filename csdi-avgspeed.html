@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Geospatial HK Avg Speed Dashboard CSDI Exercise</title>
+    <link rel="stylesheet" href="https://openlayers.org/en/v4.6.5/css/ol.css" type="text/css">
+    <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
+    <script src="https://openlayers.org/en/v4.6.5/build/ol.js"></script>
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+	        <style>
+            html,body,#map{
+                padding:0 0;
+                margin:0 0;
+                width:100%;
+                height:100%;
+            }
+            .ol-attribution.ol-uncollapsible {
+                bottom: 12px;
+                background: transparent
+            }
+			.ol-attribution ul {
+				font-size: 12px;
+				font-family: sans-serif;
+			}
+			.ol-attribution a {
+                color: black;
+            }
+			.copyrightDiv {
+				display: inline-block;
+				height: 1rem;
+				line-height: 1rem;
+				position: absolute;
+				top: 50%;
+				bottom: 5px;
+				right:  40px;
+				margin: 0 5px 0 0;
+				padding: 0 4px;
+				font-family:  sans-serif;
+				font-size: 12px;
+				background-color: rgba( 255, 255, 255, 0.7 );
+				color: #333;
+				text-align: left;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+				z-index: 1;
+			}         
+
+
+			.linkDiv {
+				display: inline-block;
+				height: 1rem;
+				line-height: 1rem;
+				position: absolute;
+				top: 50%;
+				bottom: 5px;
+				right:  310px;
+				margin: 0 5px 0 0;
+				padding: 0 4px;
+				font-family:  sans-serif;
+				font-size: 12px;
+				background-color: rgba( 255, 255, 255, 0.7 );
+				color: #333;
+				text-align: left;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+				z-index: 1;
+			}         
+
+			.glogo {
+				display: inline-block;
+				height: 1rem;
+				line-height: 1rem;
+				position: absolute;
+				top: 0%;
+				bottom: 5px;
+				right:  280px;
+				margin: 0 5px 0 0;
+				padding: 0 4px;
+				z-index: 1;
+			}         
+			
+			#datetime {
+				position: absolute;
+				bottom: .5em;
+				left: .5em;
+			}
+        </style>
+  </head>
+  <body>
+	<div id='datetime'></div>
+    <div id="map" class="map"></div>
+    <script>
+
+        var styles = new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'lime',
+            width: 4
+          })
+        });
+
+
+        var styles2 = new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'yellow',
+            width: 4
+          })
+        });
+
+        var styles3 = new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: 'red',
+            width: 4
+          })
+        });
+	  
+		var styleFunction = function(feature) {
+		  var speed = feature.get('speed');
+		  if (speed > 30) {
+			return [styles];
+		  }
+		  else if (speed > 17) {
+			return [styles2];
+		  }
+		  else {
+			return [styles3];
+		  }
+		};	
+	
+	
+		
+
+		var basemapAPI = 'https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/basemap/wgs84/{z}/{x}/{y}.png';
+		var attributionInfo = '<div><div><a href="https://geospatial.hk" target="_blank" class="linkDiv">Geospatial HK</a></div><div class="glogo" style="width:20px;height:27px;background:url(https://dashboard.hk/geospatiallogo.png);background-size:27px;"></div><div><a href="https://api.portal.hkmapservice.gov.hk/disclaimer" target="_blank" class="copyrightDiv">&copy; Map infortmation from Lands Department</a></div><div style="width:28px;height:28px;display:inline-flex;background:url(https://api.hkmapservice.gov.hk/mapapi/landsdlogo.jpg);background-size:28px;"></div></div>';
+		var map = new ol.Map({
+			controls: ol.control.defaults({attribution: false}).extend([new ol.control.Attribution({collapsible: false})]),     			
+			layers: [
+				new ol.layer.Tile({
+					source: new ol.source.XYZ({
+						url: basemapAPI,
+						attributions: new ol.Attribution({
+							html: attributionInfo
+						})							
+					})
+				})
+			],
+			target: 'map',
+			logo: false,
+			view: new ol.View({
+				center: ol.proj.fromLonLat([114.20847, 22.29227]),
+				zoom: 12,
+				minZoom: 10,
+				maxZoom: 20
+			})
+		});
+
+
+		$('#datetime').appendTo(
+		  $('.ol-overlaycontainer')
+		);
+
+
+
+
+   
+		var url = 'irnAvgSpeed.json';
+		
+		fetch(url, { cache: "no-store" }).then(function(response) {
+		  return response.json();
+		}).then(function(json) {
+
+			var vectorSource = new ol.source.Vector({
+			  features: (new ol.format.GeoJSON({
+				dataProjection: 'EPSG:4326',
+				featureProjection: 'EPSG:3857'
+			  })).readFeatures(json)
+			});
+
+			var vectorLayer = new ol.layer.Vector({
+			  source: vectorSource,
+			  style: styleFunction
+			});
+
+			map.addLayer(vectorLayer);
+			
+			$('#datetime').text("Data timestamp: " + json.date + " " + json.time);
+			
+
+			
+			setInterval(function(){ 
+			 
+				fetch(url, { cache: "no-store" }).then(function(response) {
+				  return response.json();
+				}).then(function(json) {
+			 
+					vectorSource.clear();
+
+					vectorSource.addFeatures((new ol.format.GeoJSON({
+					  dataProjection: 'EPSG:4326',
+					  featureProjection: 'EPSG:3857'
+					})).readFeatures(json));
+					
+					vectorSource.refresh();
+					
+					$('#datetime').text("Data timestamp: " + json.date + " " + json.time);				
+				});
+				
+			},60000);
+	
+			
+        });
+		
+	
+		
+    </script>
+  </body>
+</html>
